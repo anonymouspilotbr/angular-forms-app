@@ -1,5 +1,19 @@
 import { Component } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+
+function equalValues(controlName1: string, controlName2: string){
+  return (control: AbstractControl) => {
+    const val1 = control.get(controlName1)?.value;
+    const val2 = control.get(controlName2)?.value;
+
+    if(val1 === val2){
+      return null;
+    } 
+
+    return {valuesNotEqual: true};
+  }
+  
+}
 
 @Component({
   selector: 'app-signup',
@@ -8,14 +22,42 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
   templateUrl: './signup.component.html',
   styleUrl: './signup.component.css',
 })
+
 export class SignupComponent {
   signupForm = new FormGroup({
     email: new FormControl('', {
       validators: [ Validators.email, Validators.required ]
     }),
-    password: new FormControl('', {
-      validators: [ Validators.required, Validators.minLength(6) ]
-    })
+
+    passwords: new FormGroup({
+      password: new FormControl('', {
+        validators: [ Validators.required, Validators.minLength(6) ]
+      }),
+      confirmPassword: new FormControl('', {
+        validators: [ Validators.required, Validators.minLength(6) ]
+      }),
+    }, {
+      validators: [equalValues('password', 'confirmPassword')]
+    }),
+
+    firstName: new FormControl('', {validators: [Validators.required]}),
+    lastName: new FormControl('', {validators: [Validators.required]}),
+    address: new FormGroup({
+      street: new FormControl('', {validators: [Validators.required]}),
+      number: new FormControl('', {validators: [Validators.required]}),
+      postalCode: new FormControl('', {validators: [Validators.required]}),
+      city: new FormControl('', {validators: [Validators.required]}),
+    }),
+
+    role: new FormControl<'student' | 'teacher' |'employee' | 'founder' | 'other'>('student', {validators: [Validators.required]}),
+
+    source: new FormArray([
+      new FormControl(false),
+      new FormControl(false),
+      new FormControl(false),
+    ]),
+
+    agree: new FormControl(false, {validators: [Validators.required]})
   })
 
   get emailIsInvalid() {
@@ -23,18 +65,20 @@ export class SignupComponent {
   }
 
   get passwordIsInvalid() {
-    return this.signupForm.controls.password.touched && this.signupForm.controls.password.dirty && this.signupForm.controls.password.invalid;
+    return this.signupForm.controls.passwords.controls.password.touched && this.signupForm.controls.passwords.dirty && this.signupForm.controls.passwords.controls.password.invalid;
   }
 
   onSubmit() {
+    if(this.signupForm.invalid){
+      return;
+    }
     const entEmail = this.signupForm.value.email;
-    const entPassword = this.signupForm.value.password;
+    const entPassword = this.signupForm.controls.passwords.value.password;
     console.log(entEmail, entPassword);
   }
 
   onReset() {
-    this.signupForm.controls.email.setValue('');
-    this.signupForm.controls.password.setValue('');
+    this.signupForm.reset();
   }
 
 }
